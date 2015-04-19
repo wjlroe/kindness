@@ -31,20 +31,21 @@
           (recur time))))
     raf))
 
-(defn get-body-elem
-  []
-  (first (array-seq (.getElementsByTagName js/document "body"))))
+(defn get-first-elem
+  [elem-name]
+  (first (array-seq (.getElementsByTagName js/document elem-name))))
 
 (defn create-element-if-not-exist
-  [id node-name]
-  (let [node (.getElementById js/document id)]
-    (if node
-      node
-      (let [elem (.createElement js/document node-name)
-            body (get-body-elem)]
-        (set! (.-id elem) id)
-        (.appendChild body elem)
-        elem))))
+  ([id node-name] (create-element-if-not-exist id node-name "body"))
+  ([id node-name parent-name]
+   (let [node (.getElementById js/document id)]
+     (if node
+       node
+       (let [elem (.createElement js/document node-name)
+             parent (get-first-elem parent-name)]
+         (set! (.-id elem) id)
+         (.appendChild parent elem)
+         elem)))))
 
 (defn set-element-style
   [element style]
@@ -55,7 +56,7 @@
 (defn insert-image-assets!
   [images]
   (when-not (dom/getElement "images")
-    (let [body (get-body-elem)
+    (let [body (get-first-elem "body")
           div (dom/createElement "div")]
       (set! (.-id div) "images")
       (set-element-style div {:display "none"})

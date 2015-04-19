@@ -32,21 +32,33 @@
   {:owl "owl.png"
    :cage "cage.png"})
 
+(defn text-entity
+  [entity]
+  (:text (second entity)))
+
 (defn default-components
   [entity idx]
   (let [entity-name (first entity)]
-    (if (= :background entity-name)
+    (cond
+      (= :background entity-name)
       [:renderable (merge {:shape :background
                            :z idx}
                           (second entity))]
-      [:renderable (if (get image-assets (first entity))
-                     {:image (first entity)
-                      :shape :image
-                      :z idx}
-                     ;; make the failure case visually obvious
-                     {:shape :rectangle
-                      :color "#AB4642"
-                      :z idx})])))
+
+      (text-entity entity)
+      [:renderable {:text (text-entity entity)
+                    :z idx
+                    :shape :text}]
+
+      (get image-assets (first entity))
+      [:renderable {:image (first entity)
+                    :shape :image
+                    :z idx}]
+
+      :else
+      [:renderable {:shape :rectangle
+                    :color "#AB4642"
+                    :z idx}])))
 
 (defn build-components-array [name idx attrs]
   (filter
@@ -90,7 +102,13 @@
    (new-owl [600 250])
    [:cage {:position [600 250] :bounds [48 48]}]
    (new-owl [700 200])
-   [:cage {:position [700 200] :bounds [48 48]}]])
+   [:cage {:position [700 200] :bounds [48 48]}]
+   [:instructions {:position [450 595] :bounds [900 32]
+                   :text {:align "center"
+                          :baseline "bottom"
+                          :font "32pt Munro"
+                          :color "#fefefe"
+                          :text "←↑↓→ for movement. 'E' to release nearby owl"}}]])
 
 (def base-game-state
   {:entities (build-entity-array new-game-entities)})
@@ -141,6 +159,17 @@
 (defn find-entities-by-component [component]
   (filter (fn [entity] (utils/find-component component entity))
           (:entities @game-state)))
+
+(defn insert-font-css
+  []
+  (let [contents "@font-face {
+   font-family: 'Munro';
+   src: url('fonts/Munro.ttf');
+   }"
+        container (utils/create-element-if-not-exist "fontcss" "style" "head")]
+    (set! (.-type container) "text/css")
+    (set! (.-innerHTML container) contents))
+  )
 
 (defn setup-game-audio
   "Insert nodes into the dom such that the game audio tracks will be
@@ -198,6 +227,17 @@
         [x y] (:position positionable)
         surface (:surface @game-state)]
     (.drawImage surface img x y)))
+(defmethod draw :text [e]
+  (let [renderable (utils/find-component :renderable e)
+        [x y] (:position (utils/find-component :positionable e))
+        surface (:surface @game-state)
+        canvas (:canvas @game-state)
+        text (:text renderable)]
+    (set! (.-textAlign surface) (:align text))
+    (set! (.-textBaseline surface) (:baseline text))
+    (set! (.-font surface) (:font text))
+    (set! (.-fillStyle surface) (:color text))
+    (.fillText surface (:text text) x y)))
 
 (defn z-order
   [e]
@@ -399,7 +439,7 @@
 (defn setup-styles
   [canvas]
   ;; TODO: we don't want to do this on Ludum Dare's webpages!!!
-  (let [body (utils/get-body-elem)]
+  (let [body (utils/get-first-elem "body")]
     (utils/set-element-style body (:body styles)))
   (utils/set-element-style canvas (:canvas styles)))
 
@@ -418,6 +458,7 @@
     (swap! game-state assoc :canvas canvas :surface surface)
     (setup-canvas canvas)
     (setup-styles canvas)
+    (insert-font-css)
     (utils/insert-image-assets! image-assets)
     (setup-game-audio)
     (go-loop []
