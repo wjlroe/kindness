@@ -20,6 +20,7 @@
    65 :left ;; A
    83 :down ;; S
    68 :right ;; D
+   69 :activate ;; E
    })
 (def move-speed 20)
 
@@ -30,7 +31,6 @@
 (def image-assets
   {:owl "owl.png"
    :cage "cage.png"})
-
 
 (defn default-components
   [entity idx]
@@ -58,6 +58,7 @@
        :bounds [:boundable {:bounds v}]
        :controls [:controllable {:controls v}]
        :weapons [:weaponised v]
+       :trigger [:triggerable v]
        nil))))
 
 (defn make-entity
@@ -78,7 +79,9 @@
 (defn new-owl
   [position]
    [:owl {:position position :bounds [48 48]
-          :weapons {:laser {:every 10000}}}])
+          :weapons {:laser {:every 10000}}
+          :trigger {:action :release
+                    :proximity 50}}])
 
 (def new-game-entities
   [[:background {:color "#33CC00"}]
@@ -146,31 +149,19 @@
   ;;
   )
 
-
-(defn position->corrds
-  [[px py] width height shape-height shape-width]
-  [(int (- (* width (/ px 100)) (/ shape-width 2)))
-   (int (- (* height (/ py 100)) (/ shape-height 2)))])
-
-(defn absolute-bounds
-  [[w h] width height]
-  [(int (* width (/ w 100)))
-   (int (* height (/ h 100)))])
-
 (defmulti draw (fn [e] (:shape (utils/find-component :renderable e))))
 (defmethod draw :circle [e]
   (let [renderable (utils/find-component :renderable e)
         color (:color renderable)
         positionable (utils/find-component :positionable e)
-        position (:position positionable)
+        [x y] (:position positionable)
         boundable (utils/find-component :boundable e)
         [w _] (:bounds boundable)
         canvas (:canvas @game-state)
         width (.-width canvas)
         height (.-height canvas)
         radius (int (* height (/ (/ w 2) 100)))
-        surface (:surface @game-state)
-        [x y] (position->corrds position width height (* 2 radius) (* 2 radius))]
+        surface (:surface @game-state)]
     (set! (.-fillStyle surface) color)
     (.beginPath surface)
     (.arc surface x y radius 0 (* 2 Math/PI) true)
@@ -183,13 +174,7 @@
         [x y] (:position positionable)
         boundable (utils/find-component :boundable e)
         [width height] (:bounds boundable)
-        ;; canvas (:canvas @game-state)
-        ;; width (.-width canvas)
-        ;; height (.-height canvas)
-        ;; [shape-width shape-height] (absolute-bounds bounds width height)
-        surface (:surface @game-state)
-        ;; [x y] (position->corrds position width height shape-height shape-width)
-        ]
+        surface (:surface @game-state)]
     ;;(println "name:" (:name e) "x,y:" [x y] "width, height:" [width height] "color:" color)
     (set! (.-fillStyle surface) color)
     (.fillRect surface x y width height)
@@ -230,12 +215,25 @@
   (doseq [entity (renderable-entities)]
     (draw entity)))
 
-
 (defn tap-print
   [text val]
   ;; (when val
   ;;   (println text))
   val)
+
+(defn object-center
+  [entity]
+  (let [[x y w h] (utils/position-and-bounds entity)]
+    [(int (+ x (/ w 2)))
+     (int (+ y ( / h 2)))]))
+
+(defn entity-proximity?
+  [e1 e2 minimum]
+  (let [[[x1 y1] [x2 y2]] (map object-center [e1 e2])
+        proximity (Math/sqrt (+ (Math/pow (- x1 x2) 2)
+                   (Math/pow (- y1 y2) 2)))]
+    ;; (println "obect centers:" (map object-center [e1 e2]) "proximity:" proximity "min:" minimum)
+    (<= proximity minimum)))
 
 (defn collide?
   [a b]
@@ -319,20 +317,6 @@
     (println "Entity with name" (:name entity)
              "has position:" (:position (utils/find-component :positionable entity)))))
 
-(defn entity-dimentions
-  [e]
-  (let [boundable (utils/find-component :boundable e)
-        positionable (utils/find-component :positionable e)
-        [px py] (:position positionable)
-        bounds (:bounds boundable)
-        canvas (:canvas @game-state)
-        width (.-width canvas)
-        height (.-height canvas)
-        [w h] (absolute-bounds bounds width height)
-        [x y] [(int (* width (/ px 100)))
-               (int (* height (/ py 100)))]]
-    [x y w h]))
-
 (defn get-entities
   []
   (println (:entities @game-state)))
@@ -343,6 +327,18 @@
                           (:entities @game-state))]
     (println entity)))
 
+(defn trigger-entity!
+  [entity]
+  (replace-entity (assoc-in entity [:components :movable :velocity] 0.5)))
+
+(defn try-activate!
+  []
+  (doseq [player (find-entities-by-component :controllable)]
+    (doseq [entity (find-entities-by-component :triggerable)]
+      (let [proximity (:proximity (utils/find-component :triggerable entity))]
+        (when (entity-proximity? player entity proximity)
+          (trigger-entity! entity))))))
+
 (defn keyboard-handler
   [event]
   (let [action (get keyboard-controls (.-keyCode event))]
@@ -352,6 +348,7 @@
         :right (move-entity! :player move-speed 0)
         :up (move-entity! :player 0 (- move-speed))
         :down (move-entity! :player 0 move-speed)
+        :activate (try-activate!)
         nil))))
 
 (defn outside-bounds?
