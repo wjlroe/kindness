@@ -30,7 +30,8 @@
 
 (def image-assets
   {:owl "owl.png"
-   :cage "cage.png"})
+   :cage "cage.png"
+   :player "person.png"})
 
 (defn text-entity
   [entity]
