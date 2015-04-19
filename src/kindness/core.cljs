@@ -15,7 +15,12 @@
   {37 :left
    39 :right
    38 :up
-   40 :down})
+   40 :down
+   87 :up ;; W
+   65 :left ;; A
+   83 :down ;; S
+   68 :right ;; D
+   })
 (def move-speed 20)
 
 (def styles
@@ -405,9 +410,9 @@
 (defn boot-game
   []
   (let [canvas (game-surface)
-        _ (println "at boot, canvas is:" canvas)
+        ;; _ (println "at boot, canvas is:" canvas)
         surface (.getContext canvas "2d")
-        _ (println "at boot, 2d surface is:" surface)
+        ;; _ (println "at boot, 2d surface is:" surface)
         ;; TODO: listening on js/window might break LD pages!!!
         [keyboard-event-key kbd-chan] (utils/events->chan js/window
                                                           EventType.KEYDOWN
