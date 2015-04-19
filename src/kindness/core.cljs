@@ -129,7 +129,7 @@
         laser (make-entity [:laser {:position [(- x 48) (+ y 10)]
                                     :bounds [48 2]
                                     :color "#3C6890"
-                                    :velocity -0.4}])
+                                    :velocity [-0.4 0]}])
         new-entity (assoc-in entity [:components :weaponised :laser :last] now)]
     (replace-entity new-entity)
     (insert-entity laser)))
@@ -282,9 +282,9 @@
    (if (> y 100) 0 y)])
 
 (defn new-position
-  [[x y] velocity delta]
-  [(+ x (* delta velocity))
-   y])
+  [[x y] [dx dy] delta]
+  [(+ x (* delta dx))
+   (+ y (* delta dy))])
 
 (defn end-game!
   []
@@ -329,7 +329,7 @@
 
 (defn trigger-entity!
   [entity]
-  (replace-entity (assoc-in entity [:components :movable :velocity] 0.5)))
+  (replace-entity (assoc-in entity [:components :movable :velocity] [0 -0.5])))
 
 (defn try-activate!
   []
