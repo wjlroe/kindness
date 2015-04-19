@@ -315,7 +315,8 @@
   []
   (doseq [entity (find-entities-by-component :positionable)]
     (println "Entity with name" (:name entity)
-             "has position:" (:position (utils/find-component :positionable entity)))))
+             "has position:"
+             (:position (utils/find-component :positionable entity)))))
 
 (defn get-entities
   []

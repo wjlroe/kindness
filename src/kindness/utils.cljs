@@ -78,7 +78,6 @@
    Return the event goog.events.Key for the listener and the channel."
   ([el event-type] (events->chan el event-type (chan)))
   ([el event-type c]
-   (println "events->chan. el:" el "event-type:" event-type)
    [(events/listen
      el
      event-type
