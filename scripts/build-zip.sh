@@ -1,5 +1,7 @@
 #!/bin/sh
 
+lein cljsbuild once release
+
 rm -rf build
 rm kindness.zip
 mkdir -p build/js/compiled/out-adv
@@ -12,3 +14,5 @@ cp resources/public/index_release.html build/index.html
 pushd build
 zip ../kindness.zip -r .
 popd
+
+rm *-init.clj
