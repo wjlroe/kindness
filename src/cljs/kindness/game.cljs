@@ -233,7 +233,7 @@
   (let [[x y w h] (utils/position-and-bounds entity)
         laser (make-entity [:laser {:position [(- x 48) (+ y 10)]
                                     :bounds [48 2]
-                                    :color "#3C6890"
+                                    :color "#CCFF66"
                                     :velocity [-0.4 0]}])
         new-entity (assoc-in entity [:components :weaponised :laser :last] now)]
     (replace-entity new-entity)
