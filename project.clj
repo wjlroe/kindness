@@ -6,20 +6,21 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/clojurescript "0.0-2850"]
                  [figwheel "0.2.5-SNAPSHOT"]
-                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]]
-    :node-dependencies [[source-map-support "0.2.8"]]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+                 [overtone "0.9.1"]
+                 [leipzig "0.8.1"]]
+  :node-dependencies [[source-map-support "0.2.8"]]
 
   :plugins [[lein-cljsbuild "1.0.4"]
             [lein-npm "0.4.0"]
             [lein-figwheel "0.2.5-SNAPSHOT"]]
 
-  :source-paths ["src" "target/classes"]
+  :source-paths ["src/clj" "src-dev/clj" "target/classes"]
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled"]
 
-  :cljsbuild {
-              :builds [{:id "dev"
-                        :source-paths ["src" "src-dev"]
+  :cljsbuild {:builds [{:id "dev"
+                        :source-paths ["src/cljs" "src-dev/cljs"]
                         :compiler {
                                    :main kindness.dev
                                    :output-to "resources/public/js/compiled/out/kindness.js"
@@ -29,7 +30,7 @@
                                    :source-map true
                                    :asset-path "js/compiled/out"}}
                        {:id "release"
-                        :source-paths ["src"]
+                        :source-paths ["src/cljs"]
                         :compiler {
                                    :main kindness.game
                                    :output-to "resources/public/js/compiled/out-adv/kindness.min.js"
