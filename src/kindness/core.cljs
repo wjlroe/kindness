@@ -21,6 +21,7 @@
    83 :down ;; S
    68 :right ;; D
    69 :activate ;; E
+   32 :play-pause ;; space bar
    })
 (def move-speed 20)
 
@@ -72,6 +73,7 @@
        :controls [:controllable {:controls v}]
        :weapons [:weaponised v]
        :trigger [:triggerable v]
+       :advance [:advancable v]
        nil))))
 
 (defn make-entity
@@ -92,18 +94,27 @@
 (defn new-owl
   [position]
    [:owl {:position position :bounds [48 48]
-          :weapons {:laser {:every 10000}}
+          :weapons {:laser {:every (* 1000 (inc (rand-int 15)))}}
           :trigger {:action :release
-                    :proximity 50}}])
+                    :proximity 80}}])
 
 (def new-game-entities
   [[:background {:color "#33CC00"}]
-   [:player {:position [50 250] :bounds [20 20]
+   [:player {:position [50 300] :bounds [48 48]
              :controls [:up :down :left :right]}]
+
+   (new-owl [650 100])
+   [:cage {:position [650 100] :bounds [48 48]}]
+
    (new-owl [600 250])
    [:cage {:position [600 250] :bounds [48 48]}]
+
    (new-owl [700 200])
    [:cage {:position [700 200] :bounds [48 48]}]
+
+   (new-owl [500 400])
+   [:cage {:position [500 400] :bounds [48 48]}]
+
    [:instructions {:position [450 595] :bounds [900 32]
                    :text {:align "center"
                           :baseline "bottom"
@@ -111,13 +122,86 @@
                           :color "#fefefe"
                           :text "←↑↓→ for movement. 'E' to release nearby owl"}}]])
 
+(def start-screen
+  [[:spacebar {:advance {:next :start}}]
+   [:background {:color "#CC66FF"}]
+   [:title {:position [450 200]
+            :text {:align "center"
+                   :baseline "middle"
+                   :font "78pt Munro"
+                   :color "#383838"
+                   :text "Kindness to owls!"}}]
+   [:title {:position [450 400]
+            :text {:align "center"
+                   :baseline "middle"
+                   :font "48pt Munro"
+                   :color "#383838"
+                   :text "Press Space to start"}}]
+   [:player {:position [450 500]}]])
+
+(def lose-screen
+  [[:spacebar {:advance {:next :start}}]
+   [:background {:color "#FF6600"}]
+   [:title {:position [450 200]
+            :text {:align "center"
+                   :baseline "middle"
+                   :font "78pt Munro"
+                   :color "#383838"
+                   :text "Oh no! :("}}]
+   [:title {:position [450 300]
+            :text {:align "center"
+                   :baseline "middle"
+                   :font "42pt Munro"
+                   :color "#383838"
+                   :text "You got caught in an owl's laser beam."}}]
+   [:title {:position [450 400]
+            :text {:align "center"
+                   :baseline "middle"
+                   :font "32pt Munro"
+                   :color "#383838"
+                   :text "Don't hold it against them - they can't help it"}}]])
+
+(def win-screen
+  [[:spacebar {:advance {:next :start}}]
+   [:background {:color "#FFCC66"}]
+   [:title {:position [450 200]
+            :text {:align "center"
+                   :baseline "middle"
+                   :font "78pt Munro"
+                   :color "#383838"
+                   :text "Well done!"}}]
+   [:title {:position [450 300]
+            :text {:align "center"
+                   :baseline "middle"
+                   :font "48pt Munro"
+                   :color "#383838"
+                   :text "You set all the owls free!"}}]
+   [:title {:position [450 400]
+            :text {:align "center"
+                   :baseline "middle"
+                   :font "32pt Munro"
+                   :color "#383838"
+                   :text "You are truly a friend to all owl-kind."}}]])
+
 (def base-game-state
-  {:entities (build-entity-array new-game-entities)})
+  {:entities (build-entity-array start-screen)})
 
 (defonce game-state (atom base-game-state))
 (defonce rafchan (utils/raf-to-chan))
 (defonce control-chan (chan 1))
 (defonce game-booted (atom nil))
+
+(defn start-game
+  []
+  (swap! game-state assoc :entities (build-entity-array new-game-entities)))
+
+(defn win-game
+  []
+  (swap! game-state assoc :entities (build-entity-array win-screen)))
+
+(defn lose-game
+  []
+  (swap! game-state assoc :entities (build-entity-array lose-screen)))
 
 (defn remove-entity
   [entity]
@@ -330,7 +414,7 @@
 (defn end-game!
   []
   ;; (println "game lost!!!")
-
+  (lose-game)
   )
 
 (defn move-entities
@@ -381,6 +465,14 @@
         (when (entity-proximity? player entity proximity)
           (trigger-entity! entity))))))
 
+(defn play-pause-game
+  []
+  (let [advancable (first (find-entities-by-component :advancable))
+        next-state (:next (utils/find-component :advancable advancable))]
+    (condp = next-state
+      :start (start-game)
+      nil)))
+
 (defn keyboard-handler
   [event]
   (let [action (get keyboard-controls (.-keyCode event))]
@@ -391,6 +483,7 @@
         :up (move-entity! :player 0 (- move-speed))
         :down (move-entity! :player 0 move-speed)
         :activate (try-activate!)
+        :play-pause (play-pause-game)
         nil))))
 
 (defn outside-bounds?
@@ -422,11 +515,18 @@
                 (>= (.getTime now) (+ (.getTime last-time) interval)))
         (generate-laser now entity)))))
 
+(defn check-win-condition
+  []
+  (when (seq (find-entities-by-component :controllable))
+    (when-not (seq (find-entities-by-component :weaponised))
+      (win-game))))
+
 (defn render
   [delta]
   (lasers-zomg! delta)
   (move-entities delta)
   (cleanup-entities)
+  (check-win-condition)
   (render-entities))
 
 (defn setup-canvas
@@ -487,7 +587,7 @@
     ;; (reset! control-chan (chan))
     )
   ;; While game-state is still in flux...
-  (reset! game-state {})
+  ;; (reset! game-state {})
   ;; (when @rafID
   ;;   (js/window cancelAnimationFrame @rafID))
   )
