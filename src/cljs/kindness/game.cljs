@@ -302,9 +302,7 @@
         surface (:surface @game-state)]
     ;;(println "name:" (:name e) "x,y:" [x y] "width, height:" [width height] "color:" color)
     (set! (.-fillStyle surface) color)
-    (.fillRect surface x y width height)
-    (set! (.-lineWidth surface) 0)
-    (.strokeRect surface x y width height)))
+    (.fillRect surface x y width height)))
 (defmethod draw :background [e]
   (let [renderable (utils/find-component :renderable e)
         color (:color renderable)
