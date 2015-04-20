@@ -10,3 +10,5 @@ pom.xml
 resources/public/js
 *-init.clj
 *.log
+build
+*.zip
