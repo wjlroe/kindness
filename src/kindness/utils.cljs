@@ -102,3 +102,10 @@
         [x y] (:position positionable)
         [w h] (:bounds boundable)]
     [x y w h]))
+
+(defn pause-play-music
+  []
+  (let [audio (dom/getElement "soundtrack")]
+    (if (.-paused audio)
+      (.play audio)
+      (.pause audio))))

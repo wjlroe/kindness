@@ -19,9 +19,9 @@
 
   :cljsbuild {
               :builds [{:id "dev"
-                        :source-paths ["src"]
+                        :source-paths ["src" "src-dev"]
                         :compiler {
-                                   :main kindness.core
+                                   :main kindness.dev
                                    :output-to "resources/public/js/compiled/out/kindness.js"
                                    :output-dir "resources/public/js/compiled/out"
                                    :optimizations :none
@@ -31,7 +31,7 @@
                        {:id "release"
                         :source-paths ["src"]
                         :compiler {
-                                   :main kindness.core
+                                   :main kindness.game
                                    :output-to "resources/public/js/compiled/out-adv/kindness.min.js"
                                    :output-dir "resources/public/js/compiled/out-adv"
                                    :optimizations :advanced

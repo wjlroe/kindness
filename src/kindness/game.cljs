@@ -1,9 +1,8 @@
-(ns kindness.core
+(ns kindness.game
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [cljs.core.async :as async
              :refer [>! <! put! chan alts! timeout]]
             [clojure.set :refer [difference]]
-            [figwheel.client :as fw]
             [kindness.utils :as utils])
   (:import [goog.events EventType]))
 
@@ -22,6 +21,7 @@
    68 :right ;; D
    69 :activate ;; E
    32 :play-pause ;; space bar
+   191 :toggle-music ;; /
    })
 (def move-speed 20)
 
@@ -261,7 +261,16 @@
   ready to play."
   []
   ;;
-  )
+  (let [audio (utils/create-element-if-not-exist "soundtrack" "audio" "body")
+        source-ogg (utils/create-element-if-not-exist "soundtrack-source-ogg" "source" "audio")
+        source-mp3 (utils/create-element-if-not-exist "soundtrack-source-mp3" "source" "audio")]
+    (set! (.-loop audio) 1)
+    (set! (.-autoplay audio) 1)
+    (set! (.-src source-ogg) "music/soundtrack.ogg")
+    (set! (.-type source-ogg) "audio/ogg; codecs=\"vorbis\"")
+    (set! (.-src source-mp3) "music/soundtrack.mp3")
+    (set! (.-type source-mp3) "audio/mpeg; codecs=\"mp3\"")
+))
 
 (defmulti draw (fn [e] (:shape (utils/find-component :renderable e))))
 (defmethod draw :circle [e]
@@ -475,6 +484,7 @@
 
 (defn keyboard-handler
   [event]
+  ;; (println (.-keyCode event))
   (let [action (get keyboard-controls (.-keyCode event))]
     (when action
       (condp = action
@@ -484,6 +494,7 @@
         :down (move-entity! :player 0 move-speed)
         :activate (try-activate!)
         :play-pause (play-pause-game)
+        :toggle-music (utils/pause-play-music)
         nil))))
 
 (defn outside-bounds?
@@ -576,46 +587,6 @@
           rafchan (do (render v)
                       (recur)))))))
 
-(defn setup []
-  (upgrade-game-state)
-  (boot-game))
-
-(defn teardown []
-  (when control-chan
-    (println "Sending close signal")
-    (go (>! control-chan :close))
-    ;; (reset! control-chan (chan))
-    )
-  ;; While game-state is still in flux...
-  ;; (reset! game-state {})
-  ;; (when @rafID
-  ;;   (js/window cancelAnimationFrame @rafID))
-  )
-
 (when-not @game-booted
   (boot-game)
   (reset! game-booted :yup))
-
-(fw/start {
-           ;; configure a websocket url if you are using your own server
-           ;; :websocket-url "ws://localhost:3449/figwheel-ws"
-
-           ;; optional callback
-           :on-jsload (fn []
-                        (teardown)
-                        (setup))
-
-           ;; The heads up display is enabled by default
-           ;; to disable it:
-           ;; :heads-up-display false
-
-           ;; when the compiler emits warnings figwheel
-           ;; blocks the loading of files.
-           ;; To disable this behavior:
-           ;; :load-warninged-code true
-
-           ;; if figwheel is watching more than one build
-           ;; it can be helpful to specify a build id for
-           ;; the client to focus on
-           ;; :build-id "example"
-           })
