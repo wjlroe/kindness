@@ -12,3 +12,4 @@ resources/public/js
 *.log
 build
 *.zip
+/soundtrack.wav
