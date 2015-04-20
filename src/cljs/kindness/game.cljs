@@ -58,9 +58,11 @@
                     :z idx}]
 
       :else
-      [:renderable {:shape :rectangle
-                    :color "#AB4642"
-                    :z idx}])))
+      [:renderable (merge
+                    {:shape :rectangle
+                     :color "#AB4642"
+                     :z idx}
+                    (second entity))])))
 
 (defn build-components-array [name idx attrs]
   (filter
