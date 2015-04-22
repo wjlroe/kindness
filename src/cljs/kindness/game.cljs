@@ -366,29 +366,33 @@
   (let [[[x1 y1] [x2 y2]] (map object-center [e1 e2])
         proximity (Math/sqrt (+ (Math/pow (- x1 x2) 2)
                    (Math/pow (- y1 y2) 2)))]
-    ;; (println "obect centers:" (map object-center [e1 e2]) "proximity:" proximity "min:" minimum)
+    ;; (println "object centers:" (map object-center [e1 e2]) "proximity:" proximity "min:" minimum)
     (<= proximity minimum)))
 
 (defn collide?
   [a b]
   (let [both [a b]
+        boundables (map (partial utils/find-component :boundable) both)
         [[x1 y1 w1 h1] [x2 y2 w2 h2]] (map utils/position-and-bounds both)]
-    (or (tap-print
-         "top-right"
-         (and (<= x1 x2 (+ x1 w1))
-              (<= y2 y1 (+ y2 h2))))
-        (tap-print
-         "bottom-right"
-         (and (<= x1 x2 (+ x1 w1))
-              (<= y1 y2 (+ y1 h1))))
-        (tap-print
-         "bottom-left"
-         (and (<= x2 x1 (+ x2 w2))
-              (<= y1 y2 (+ y1 h1))))
-        (tap-print
-         "top-left"
-         (and (<= x2 x1 (+ x2 w2))
-              (<= y2 y1 (+ y2 h2)))))))
+    ;; nobody can collide with
+    ;; an entity that doesn't have bounds
+    (and (seq (filter identity boundables))
+         (or (tap-print
+              "top-right"
+              (and (<= x1 x2 (+ x1 w1))
+                   (<= y2 y1 (+ y2 h2))))
+             (tap-print
+              "bottom-right"
+              (and (<= x1 x2 (+ x1 w1))
+                   (<= y1 y2 (+ y1 h1))))
+             (tap-print
+              "bottom-left"
+              (and (<= x2 x1 (+ x2 w2))
+                   (<= y1 y2 (+ y1 h1))))
+             (tap-print
+              "top-left"
+              (and (<= x2 x1 (+ x2 w2))
+                   (<= y2 y1 (+ y2 h2))))))))
 
 (defn collision?
   [entity others]
@@ -464,7 +468,9 @@
 
 (defn trigger-entity!
   [entity]
-  (replace-entity (assoc-in entity [:components :movable :velocity] [0 -0.5])))
+  (replace-entity (-> entity
+                      (update-in [:components] dissoc :boundable :weaponised)
+                      (assoc-in [:components :movable :velocity] [0 -0.5]))))
 
 (defn try-activate!
   []
