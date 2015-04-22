@@ -424,12 +424,6 @@
   [(+ x (* delta dx))
    (+ y (* delta dy))])
 
-(defn end-game!
-  []
-  ;; (println "game lost!!!")
-  (lose-game)
-  )
-
 (defn move-entities
   [delta]
   (doseq [entity (find-entities-by-component :movable)]
@@ -445,8 +439,8 @@
       ;;(println "old position:" position "new:" npos)
       (if (seq collided-players)
         (do
-          ;; (println "entity" new-entity "collided with players:" collided-players)
-          (end-game!))
+          (println "entity" new-entity "collided with players:" collided-players)
+          (lose-game))
         (replace-entity new-entity)))))
 
 (defn entity-positions
