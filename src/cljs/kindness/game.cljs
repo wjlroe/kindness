@@ -522,15 +522,15 @@
 
 (defn lasers-zomg!
   [delta]
-  (doseq [entity (find-entities-by-component :weaponised)]
-    (let [weaponised (utils/find-component :weaponised entity)
-          laser (:laser weaponised)
-          interval (:every laser)
-          last-time (:last laser)
-          now (js/Date.)]
-      (when (or (nil? last-time)
-                (>= (.getTime now) (+ (.getTime last-time) interval)))
-        (generate-laser now entity)))))
+  (let [now (js/Date.)]
+   (doseq [entity (find-entities-by-component :weaponised)]
+     (let [weaponised (utils/find-component :weaponised entity)
+           laser (:laser weaponised)
+           interval (:every laser)
+           last-time (:last laser)]
+       (when (or (nil? last-time)
+                 (>= (.getTime now) (+ (.getTime last-time) interval)))
+         (generate-laser now entity))))))
 
 (defn check-win-condition
   []
