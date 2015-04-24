@@ -371,6 +371,7 @@
 
 (defn collide?
   [& both]
+  {:pre [(= (count both) 2)]}
   (let [boundables (map (partial utils/find-component :boundable) both)
         [[x1 y1 w1 h1] [x2 y2 w2 h2]] (map utils/position-and-bounds both)]
     ;; nobody can collide with
