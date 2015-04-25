@@ -3,7 +3,9 @@
 lein cljsbuild once release
 
 rm -rf build
-rm kindness.zip
+if [ -f kindness.zip ]; then
+    rm kindness.zip
+fi
 mkdir -p build/js/compiled/out-adv
 cp resources/public/js/compiled/out-adv/kindness.min.js build/js/compiled/out-adv/
 cp -r resources/public/fonts build/
@@ -15,4 +17,4 @@ pushd build
 zip ../kindness.zip -r .
 popd
 
-rm *-init.clj
+rm -f *-init.clj
