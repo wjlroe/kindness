@@ -8,7 +8,9 @@
                  [figwheel "0.2.5-SNAPSHOT"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [overtone "0.9.1"]
-                 [leipzig "0.8.1"]]
+                 [leipzig "0.8.1"]
+                 [environ "1.0.0"]
+                 [amazonica "0.3.21"]]
   :node-dependencies [[source-map-support "0.2.8"]]
 
   :plugins [[lein-cljsbuild "1.0.4"]
