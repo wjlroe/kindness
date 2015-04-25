@@ -376,7 +376,7 @@
         [[x1 y1 w1 h1] [x2 y2 w2 h2]] (map utils/position-and-bounds both)]
     ;; nobody can collide with
     ;; an entity that doesn't have bounds
-    (and (seq (filter identity boundables))
+    (and (= (count (remove nil? boundables)) (count both))
          (or (tap-print
               "top-right"
               (and (<= x1 x2 (+ x1 w1))
