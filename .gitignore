@@ -13,3 +13,4 @@ resources/public/js
 build
 *.zip
 /soundtrack.wav
+Thumbs.db
