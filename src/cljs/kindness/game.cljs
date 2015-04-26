@@ -26,7 +26,12 @@
    })
 (def gamepad-buttons
   {0 :activate
-   1 :play-pause})
+   1 :play-pause
+   9 :play-pause
+   12 :up
+   13 :down
+   14 :left
+   15 :right})
 (def keyboard-move-speed 20)
 (def gamepad-move-speed 7)
 
