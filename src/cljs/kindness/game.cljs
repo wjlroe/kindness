@@ -3,6 +3,7 @@
   (:require [cljs.core.async :as async
              :refer [>! <! put! chan alts! timeout]]
             [clojure.set :refer [difference]]
+            [kindness.gamepad :as gamepad]
             [kindness.utils :as utils])
   (:import [goog.events EventType]))
 
@@ -23,7 +24,11 @@
    32 :play-pause ;; space bar
    191 :toggle-music ;; /
    })
-(def move-speed 20)
+(def gamepad-buttons
+  {0 :activate
+   1 :play-pause})
+(def keyboard-move-speed 20)
+(def gamepad-move-speed 7)
 
 (def styles
   {:body {:margin 0}
@@ -482,20 +487,62 @@
       :start (start-game)
       nil)))
 
+(defn action-dispatch
+  [move-speed action]
+  (condp = action
+    :left (move-entity! :player (- move-speed) 0)
+    :right (move-entity! :player move-speed 0)
+    :up (move-entity! :player 0 (- move-speed))
+    :down (move-entity! :player 0 move-speed)
+    :activate (try-activate!)
+    :play-pause (play-pause-game)
+    :toggle-music (utils/pause-play-music)
+    nil))
+
 (defn keyboard-handler
   [event]
   ;; (println (.-keyCode event))
-  (let [action (get keyboard-controls (.-keyCode event))]
-    (when action
-      (condp = action
-        :left (move-entity! :player (- move-speed) 0)
-        :right (move-entity! :player move-speed 0)
-        :up (move-entity! :player 0 (- move-speed))
-        :down (move-entity! :player 0 move-speed)
-        :activate (try-activate!)
-        :play-pause (play-pause-game)
-        :toggle-music (utils/pause-play-music)
-        nil))))
+  (when-let [action (get keyboard-controls (.-keyCode event))]
+    (action-dispatch keyboard-move-speed action)))
+
+(defn gamepad-press
+  [idx button]
+  {:button idx :pressed (.-pressed button)})
+
+(defn press-to-action
+  [press]
+  (when press
+   (get gamepad-buttons (:button press))))
+
+(defn axis-to-action
+  [axes]
+  (let [left-x (aget axes 0)
+        left-y (aget axes 1)]
+    (filter
+     identity
+     (list
+      (when (< left-x -0.5) :left)
+      (when (> left-x 0.5) :right)
+      (when (< left-y -0.5) :up)
+      (when (> left-y 0.5) :down)))))
+
+(defn tap-val
+  [prefix val]
+  (println prefix val)
+  val)
+
+(defn gamepad-move
+  [gamepads]
+  (when-let [first-gamepad (aget gamepads 0)]
+    (let [axes (.-axes first-gamepad)
+          buttons (.-buttons first-gamepad)
+          actions (concat (->> (keep-indexed gamepad-press buttons)
+                               (filter :pressed)
+                               (map press-to-action)
+                               (filter identity))
+                          (axis-to-action axes))]
+      (doseq [action actions]
+        (action-dispatch gamepad-move-speed action)))))
 
 (defn outside-bounds?
   [entity width height]
@@ -584,7 +631,8 @@
                            (utils/stop-events keyboard-event-key)
                            (println "Control closed"))
                          (recur))
-          rafchan (do (render v)
+          rafchan (do (gamepad-move (gamepad/raw-gamepads))
+                      (render v)
                       (recur)))))))
 
 (when-not @game-booted
