@@ -284,59 +284,46 @@
     (set! (.-type source-mp3) "audio/mpeg; codecs=\"mp3\"")
 ))
 
-(defmulti draw (fn [e] (:shape (utils/find-component :renderable e))))
-(defmethod draw :circle [e]
-  (let [renderable (utils/find-component :renderable e)
-        color (:color renderable)
-        positionable (utils/find-component :positionable e)
-        [x y] (:position positionable)
-        boundable (utils/find-component :boundable e)
-        [w _] (:bounds boundable)
-        canvas (:canvas @game-state)
+(defmulti draw (fn [_ _ e] (:shape (utils/find-component :renderable e))))
+(defmethod draw :circle
+  [surface canvas e]
+  (let [color (:color (utils/find-component :renderable e))
+        [x y] (:position (utils/find-component :positionable e))
+        [w _] (:bounds (utils/find-component :boundable e))
         width (.-width canvas)
         height (.-height canvas)
-        radius (int (* height (/ (/ w 2) 100)))
-        surface (:surface @game-state)]
+        radius (int (* height (/ (/ w 2) 100)))]
     (set! (.-fillStyle surface) color)
     (.beginPath surface)
     (.arc surface x y radius 0 (* 2 Math/PI) true)
     (.closePath surface)
     (.fill surface)))
-(defmethod draw :rectangle [e]
-  (let [renderable (utils/find-component :renderable e)
-        color (:color renderable)
-        positionable (utils/find-component :positionable e)
-        [x y] (:position positionable)
-        boundable (utils/find-component :boundable e)
-        [width height] (:bounds boundable)
-        surface (:surface @game-state)]
+(defmethod draw :rectangle
+  [surface canvas e]
+  (let [color (:color (utils/find-component :renderable e))
+        [x y] (:position (utils/find-component :positionable e))
+        [width height] (:bounds (utils/find-component :boundable e))]
     ;;(println "name:" (:name e) "x,y:" [x y] "width, height:" [width height] "color:" color)
     (set! (.-fillStyle surface) color)
     (.fillRect surface x y width height)))
-(defmethod draw :background [e]
-  (let [renderable (utils/find-component :renderable e)
-        color (:color renderable)
-        canvas (:canvas @game-state)
+(defmethod draw :background
+  [surface canvas e]
+  (let [color (:color (utils/find-component :renderable e))
         width (.-width canvas)
-        height (.-height canvas)
-        surface (:surface @game-state)]
+        height (.-height canvas)]
     (set! (.-fillStyle surface) color)
     (.fillRect surface 0 0 width height)
     (.strokeRect surface 0 0 width height)))
-(defmethod draw :image [e]
-  (let [renderable (utils/find-component :renderable e)
-        positionable (utils/find-component :positionable e)
-        image (:image renderable)
+(defmethod draw :image
+  [surface canvas e]
+  (let [image (:image (utils/find-component :renderable e))
         img (utils/find-image image)
-        [x y] (:position positionable)
-        surface (:surface @game-state)]
+        [x y] (:position (utils/find-component :positionable e))]
     (.drawImage surface img x y)))
-(defmethod draw :text [e]
-  (let [renderable (utils/find-component :renderable e)
-        [x y] (:position (utils/find-component :positionable e))
-        surface (:surface @game-state)
-        canvas (:canvas @game-state)
-        text (:text renderable)]
+(defmethod draw :text
+  [surface canvas e]
+  (let [[x y] (:position (utils/find-component :positionable e))
+        text (:text (utils/find-component :renderable e))]
     (set! (.-textAlign surface) (:align text))
     (set! (.-textBaseline surface) (:baseline text))
     (set! (.-font surface) (:font text))
@@ -356,8 +343,10 @@
 
 (defn render-entities
   []
-  (doseq [entity (renderable-entities)]
-    (draw entity)))
+  (let [surface (:surface @game-state)
+        canvas (:canvas @game-state)]
+   (doseq [entity (renderable-entities)]
+     (draw surface canvas entity))))
 
 (defn tap-print
   [text val]
