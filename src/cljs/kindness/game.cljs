@@ -336,10 +336,7 @@
 
 (defn renderable-entities
   []
-  (sort-by z-order
-           (filter (fn [entity]
-                     (utils/find-component :renderable entity))
-                   (:entities @game-state))))
+  (sort-by z-order (find-entities-by-component :renderable)))
 
 (defn render-entities
   []
