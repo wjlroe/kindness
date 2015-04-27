@@ -95,6 +95,11 @@
 (defn find-component [component entity]
   (get (:components entity) component))
 
+(defn component-filter
+  [component col]
+  (filter #(find-component component %)
+          col))
+
 (defn position-and-bounds
   [entity]
   (let [boundable (find-component :boundable entity)

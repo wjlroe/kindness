@@ -253,9 +253,9 @@
   []
   (utils/create-element-if-not-exist "game" "canvas"))
 
-(defn find-entities-by-component [component]
-  (filter (fn [entity] (utils/find-component component entity))
-          (:entities @game-state)))
+(defn find-entities-by-component
+  [component]
+  (utils/component-filter component (:entities @game-state)))
 
 (defn insert-font-css
   []
