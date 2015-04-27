@@ -10,13 +10,7 @@
 (defn teardown []
   (when game/control-chan
     (println "Sending close signal")
-    (put! game/control-chan :close)
-    )
-  ;; While game-state is still in flux...
-  ;; (reset! game/game-state {})
-  ;; (when game/@rafID
-  ;;   (js/window cancelAnimationFrame game/@rafID))
-  )
+    (put! game/control-chan :close)))
 
 (fw/start {
            ;; configure a websocket url if you are using your own server
