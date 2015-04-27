@@ -616,6 +616,25 @@
 
 ;; events->chan on keyboard -> println the event (check it's not duplicated)
 
+(defn calculate-canvas-size
+  [canvas]
+  (let [body (utils/get-first-elem "body")
+        window-width (.-clientWidth body)
+        window-height (.-clientHeight body)
+        game-ratio (/ game-width game-height)
+        dw (/ window-width game-width)
+        dh (/ window-height game-height)]
+    (if (>= dh dw)
+      [window-width (/ window-width game-ratio)]
+      [(* window-height game-ratio) window-height])))
+
+(defn resize-canvas
+  [canvas]
+  (let [[new-width new-height] (calculate-canvas-size canvas)]
+    (utils/set-element-style canvas
+                             {:width (int new-width)
+                              :height (int new-height)})))
+
 (defn fullscreen-handler
   [canvas e]
   (when (= (.-keyCode e)
@@ -636,6 +655,9 @@
         [keyboard-event-key kbd-chan] (utils/events->chan js/window
                                                           EventType.KEYDOWN
                                                           (chan 1))
+        [resize-event-key resize-chan] (utils/events->chan js/window
+                                                           EventType.RESIZE
+                                                           (chan 1))
         fullscreen-key (events/listen js/window
                                       EventType.KEYDOWN
                                       (partial fullscreen-handler canvas))]
@@ -646,8 +668,10 @@
     (utils/insert-image-assets! image-assets)
     (setup-game-audio)
     (go-loop [last-state nil]
-      (let [[v c] (alts! [kbd-chan rafchan control-chan])]
+      (let [[v c] (alts! [kbd-chan rafchan control-chan resize-chan])]
         (condp = c
+          resize-chan (do (resize-canvas canvas)
+                          (recur last-state))
           kbd-chan (do
                      (keyboard-handler v)
                      (recur last-state))
@@ -655,6 +679,7 @@
                          (do
                            (utils/stop-events keyboard-event-key)
                            (utils/stop-events fullscreen-key)
+                           (utils/stop-events resize-event-key)
                            (println "Control closed"))
                          (recur last-state))
           rafchan (do (utils/record-render-time v)
