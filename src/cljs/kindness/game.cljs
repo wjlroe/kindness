@@ -3,6 +3,8 @@
   (:require [cljs.core.async :as async
              :refer [>! <! put! chan alts! timeout]]
             [clojure.set :refer [difference]]
+            [goog.dom.fullscreen :as fullscreen]
+            [goog.events :as events]
             [kindness.gamepad :as gamepad]
             [kindness.utils :as utils])
   (:import [goog.events EventType]))
@@ -11,6 +13,7 @@
 
 (defonce game-width 900)
 (defonce game-height 600)
+(def fullscreen-keycode 70) ;; F
 (def keyboard-controls
   {37 :left
    39 :right
@@ -613,6 +616,16 @@
 
 ;; events->chan on keyboard -> println the event (check it's not duplicated)
 
+(defn fullscreen-handler
+  [canvas e]
+  (when (= (.-keyCode e)
+           fullscreen-keycode)
+    (when (fullscreen/isSupported)
+      (println "fullscreen is supported")
+      (if (fullscreen/isFullScreen)
+        (fullscreen/exitFullScreen)
+        (fullscreen/requestFullScreen canvas)))))
+
 (defn boot-game
   []
   (let [canvas (game-surface)
@@ -622,14 +635,17 @@
         ;; TODO: listening on js/window might break LD pages!!!
         [keyboard-event-key kbd-chan] (utils/events->chan js/window
                                                           EventType.KEYDOWN
-                                                          (chan 1))]
+                                                          (chan 1))
+        fullscreen-key (events/listen js/window
+                                      EventType.KEYDOWN
+                                      (partial fullscreen-handler canvas))]
     (swap! game-state assoc :canvas canvas :surface surface)
     (setup-canvas canvas)
     (setup-styles canvas)
     (insert-font-css)
     (utils/insert-image-assets! image-assets)
     (setup-game-audio)
-    (go-loop [last-state @game-state]
+    (go-loop [last-state nil]
       (let [[v c] (alts! [kbd-chan rafchan control-chan])]
         (condp = c
           kbd-chan (do
@@ -638,13 +654,14 @@
           control-chan (if (= v :close)
                          (do
                            (utils/stop-events keyboard-event-key)
+                           (utils/stop-events fullscreen-key)
                            (println "Control closed"))
                          (recur last-state))
           rafchan (do (utils/record-render-time v)
                       (gamepad-move (gamepad/raw-gamepads))
                       (run-systems v)
                       (when (or (not= last-state @game-state)
-                                (> v 1000))
+                                (> v 100))
                         (render-entities))
                       (recur @game-state)))))))
 
