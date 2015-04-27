@@ -401,13 +401,38 @@
               (remove (fn [e] (= (:id e) (:id entity)))
                       (find-entities-by-component :boundable))))
 
+(defn collides-with-others?
+  [entity]
+  (seq (collision-detect entity)))
+
+(defn outside-bounds?
+  [entity width height]
+  (let [[x y w h] (utils/position-and-bounds entity)]
+    (or (<= (+ x w) 0)
+        (>= y height)
+        (>= x width)
+        (<= (+ y h) 0))))
+
+(defn outside-canvas?
+  [entity]
+  (let [canvas (:canvas @game-state)
+        width (.-width canvas)
+        height (.-height canvas)
+        [x y w h] (utils/position-and-bounds entity)]
+    (or (<= x 0)
+        (>= (+ y h) height)
+        (>= (+ x w) width)
+        (<= y 0))))
+
 (defn move-entity!
   [name dx dy]
-  (let [entity (first (filter (fn [x] (= (:name x) name)) (:entities @game-state)))
+  (let [entity (first (filter (fn [x] (= (:name x) name))
+                              (:entities @game-state)))
         new-entity (update-in entity [:components :positionable :position]
-                               (fn [[x y]]
-                                 [(+ x dx) (+ y dy)]))]
-    (when-not (seq (collision-detect new-entity))
+                              (fn [[x y]]
+                                [(+ x dx) (+ y dy)]))]
+    (when (and (not (collides-with-others? new-entity))
+               (not (outside-canvas? new-entity)))
       (replace-entity new-entity))))
 
 (defn wrap-round
@@ -535,13 +560,7 @@
       (doseq [action actions]
         (action-dispatch gamepad-move-speed action)))))
 
-(defn outside-bounds?
-  [entity width height]
-  (let [[x y w h] (utils/position-and-bounds entity)]
-    (or (<= (+ x w) 0)
-        (>= y height)
-        (>= x width)
-        (<= (+ y h) 0))))
+
 
 (defn cleanup-entities
   []
