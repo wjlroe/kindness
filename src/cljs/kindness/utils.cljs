@@ -52,8 +52,7 @@
 (defn set-element-style
   [element style]
   (doseq [[key value] style]
-    (style/setStyle element (name key) value)
-    ))
+    (style/setStyle element (name key) value)))
 
 (defn insert-image-assets!
   [images]
