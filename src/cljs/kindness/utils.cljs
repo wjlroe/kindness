@@ -8,6 +8,8 @@
   (:import [goog.async AnimationDelay]
            [goog.events EventType]))
 
+(defonce render-times (atom '()))
+
 (defn guid []
   (let [s4 (fn [] (-> (Math/floor (* (inc (Math/random)) 0x10000))
                    (.toString 16)
@@ -114,3 +116,28 @@
     (if (.-paused audio)
       (.play audio)
       (.pause audio))))
+
+(defn max-conj
+  [num]
+  (fn [col item]
+    (take num (conj col item))))
+
+(defn record-render-time
+  [delta]
+  (swap! render-times (max-conj 10) delta))
+
+(defn get-render-times
+  []
+  @render-times)
+
+(defn average-render-time
+  []
+  (let [times @render-times]
+    (/ (reduce + times)
+       (count times))))
+
+(defn frame-rate
+  []
+  (/ 1
+     (/ (average-render-time)
+      1000)))
