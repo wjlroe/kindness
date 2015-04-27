@@ -589,13 +589,12 @@
     (when-not (seq (find-entities-by-component :weaponised))
       (win-game))))
 
-(defn render
+(defn run-systems
   [delta]
   (lasers-zomg! delta)
   (move-entities delta)
   (cleanup-entities)
-  (check-win-condition)
-  (render-entities))
+  (check-win-condition))
 
 (defn setup-canvas
   [canvas]
@@ -630,20 +629,24 @@
     (insert-font-css)
     (utils/insert-image-assets! image-assets)
     (setup-game-audio)
-    (go-loop []
+    (go-loop [last-state @game-state]
       (let [[v c] (alts! [kbd-chan rafchan control-chan])]
         (condp = c
           kbd-chan (do
                      (keyboard-handler v)
-                     (recur))
+                     (recur last-state))
           control-chan (if (= v :close)
                          (do
                            (utils/stop-events keyboard-event-key)
                            (println "Control closed"))
-                         (recur))
-          rafchan (do (gamepad-move (gamepad/raw-gamepads))
-                      (render v)
-                      (recur)))))))
+                         (recur last-state))
+          rafchan (do (utils/record-render-time v)
+                      (gamepad-move (gamepad/raw-gamepads))
+                      (run-systems v)
+                      (when (or (not= last-state @game-state)
+                                (> v 1000))
+                        (render-entities))
+                      (recur @game-state)))))))
 
 (when-not @game-booted
   (boot-game)
