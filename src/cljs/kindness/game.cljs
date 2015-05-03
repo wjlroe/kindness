@@ -40,7 +40,8 @@
 
 (def styles
   {:body {:margin 0}
-   :canvas {:image-rendering "pixelated"}})
+   :canvas [[:image-rendering "-webkit-optimize-contrast"]
+            [:image-rendering "pixelated"]]})
 
 (def image-assets
   {:owl "owl.png"
