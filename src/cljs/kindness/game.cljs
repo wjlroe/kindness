@@ -269,8 +269,7 @@
    }"
         container (utils/create-element-if-not-exist "fontcss" "style" "head")]
     (set! (.-type container) "text/css")
-    (set! (.-innerHTML container) contents))
-  )
+    (set! (.-innerHTML container) contents)))
 
 (defn setup-game-audio
   "Insert nodes into the dom such that the game audio tracks will be
@@ -285,8 +284,7 @@
     (set! (.-src source-ogg) "music/soundtrack.ogg")
     (set! (.-type source-ogg) "audio/ogg; codecs=\"vorbis\"")
     (set! (.-src source-mp3) "music/soundtrack.mp3")
-    (set! (.-type source-mp3) "audio/mpeg; codecs=\"mp3\"")
-))
+    (set! (.-type source-mp3) "audio/mpeg; codecs=\"mp3\"")))
 
 (defmulti draw (fn [_ _ e] (:shape (utils/find-component :renderable e))))
 (defmethod draw :circle
@@ -323,6 +321,7 @@
   (let [image (:image (utils/find-component :renderable e))
         img (utils/find-image image)
         [x y] (:position (utils/find-component :positionable e))]
+    ;; need width + height
     (.drawImage surface img x y)))
 (defmethod draw :text
   [surface canvas e]
