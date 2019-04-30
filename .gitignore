@@ -15,3 +15,5 @@ build
 /soundtrack.wav
 Thumbs.db
 .nrepl-port
+.idea/
+*.iml
