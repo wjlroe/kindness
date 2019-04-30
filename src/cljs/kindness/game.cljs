@@ -306,7 +306,6 @@
   (let [color (:color (utils/find-component :renderable e))
         [x y] (:position (utils/find-component :positionable e))
         [width height] (:bounds (utils/find-component :boundable e))]
-    ;;(println "name:" (:name e) "x,y:" [x y] "width, height:" [width height] "color:" color)
     (set! (.-fillStyle surface) color)
     (.fillRect surface x y width height)))
 (defmethod draw :background
@@ -365,7 +364,6 @@
   (let [[[x1 y1] [x2 y2]] (map object-center [e1 e2])
         proximity (Math/sqrt (+ (Math/pow (- x1 x2) 2)
                    (Math/pow (- y1 y2) 2)))]
-    ;; (println "object centers:" (map object-center [e1 e2]) "proximity:" proximity "min:" minimum)
     (<= proximity minimum)))
 
 (defn collide?
@@ -460,10 +458,8 @@
           collided-entites (collision-detect new-entity)
           collided-players (remove (fn [e] (= (:id e) (:id new-entity)))
                                    (filter (fn [e] (= :player (:name e))) collided-entites))]
-      ;;(println "old position:" position "new:" npos)
       (if (seq collided-players)
         (do
-          (println "entity" new-entity "collided with players:" collided-players)
           (lose-game))
         (replace-entity new-entity)))))
 
@@ -520,13 +516,12 @@
 
 (defn keyboard-handler
   [event]
-  ;; (println (.-keyCode event))
   (when-let [action (get keyboard-controls (.-keyCode event))]
     (action-dispatch keyboard-move-speed action)))
 
 (defn gamepad-press
   [idx button]
-  {:button idx :pressed (.-pressed button)})
+  {:button idx :pressed (aget button "pressed")})
 
 (defn press-to-action
   [press]
@@ -537,6 +532,7 @@
   [axes]
   (let [left-x (aget axes 0)
         left-y (aget axes 1)]
+    ;; TODO: Yield magnitude of movement also
     (filter
      identity
      (list
@@ -553,8 +549,8 @@
 (defn gamepad-move
   [gamepads]
   (when-let [first-gamepad (aget gamepads 0)]
-    (let [axes (.-axes first-gamepad)
-          buttons (.-buttons first-gamepad)
+    (let [axes (aget first-gamepad "axes")
+          buttons (aget first-gamepad "buttons")
           actions (concat (->> (keep-indexed gamepad-press buttons)
                                (filter :pressed)
                                (map press-to-action)
@@ -562,8 +558,6 @@
                           (axis-to-action axes))]
       (doseq [action actions]
         (action-dispatch gamepad-move-speed action)))))
-
-
 
 (defn cleanup-entities
   []
@@ -614,8 +608,6 @@
     (utils/set-element-style body (:body styles)))
   (utils/set-element-style canvas (:canvas styles)))
 
-;; events->chan on keyboard -> println the event (check it's not duplicated)
-
 (defn calculate-canvas-size
   [canvas]
   (let [body (utils/get-first-elem "body")
@@ -640,7 +632,6 @@
   (when (= (.-keyCode e)
            fullscreen-keycode)
     (when (fullscreen/isSupported)
-      (println "fullscreen is supported")
       (if (fullscreen/isFullScreen)
         (fullscreen/exitFullScreen)
         (fullscreen/requestFullScreen canvas)))))
@@ -648,9 +639,7 @@
 (defn boot-game
   []
   (let [canvas (game-surface)
-        ;; _ (println "at boot, canvas is:" canvas)
         surface (.getContext canvas "2d")
-        ;; _ (println "at boot, 2d surface is:" surface)
         ;; TODO: listening on js/window might break LD pages!!!
         [keyboard-event-key kbd-chan] (utils/events->chan js/window
                                                           EventType.KEYDOWN
@@ -664,9 +653,11 @@
     (swap! game-state assoc :canvas canvas :surface surface)
     (setup-canvas canvas)
     (setup-styles canvas)
+    (resize-canvas canvas)
     (insert-font-css)
     (utils/insert-image-assets! image-assets)
     (setup-game-audio)
+    (render-entities)
     (go-loop [last-state nil]
       (let [[v c] (alts! [kbd-chan rafchan control-chan resize-chan])]
         (condp = c
@@ -679,8 +670,7 @@
                          (do
                            (utils/stop-events keyboard-event-key)
                            (utils/stop-events fullscreen-key)
-                           (utils/stop-events resize-event-key)
-                           (println "Control closed"))
+                           (utils/stop-events resize-event-key))
                          (recur last-state))
           rafchan (do (utils/record-render-time v)
                       (gamepad-move (gamepad/raw-gamepads))

@@ -88,10 +88,7 @@
 
 (defn stop-events
   [event-key]
-  (println "Stopping events:" )
-  (println event-key)
-  (events/unlistenByKey event-key)
-  (println "Stopped"))
+  (events/unlistenByKey event-key))
 
 (defn find-component [component entity]
   (get (:components entity) component))
@@ -109,7 +106,7 @@
         [w h] (:bounds boundable)]
     [x y w h]))
 
-(defn pause-play-music
+(defn ^:export pause-play-music
   []
   (let [audio (dom/getElement "soundtrack")]
     (if (.-paused audio)

@@ -23,8 +23,7 @@
 
   :cljsbuild {:builds [{:id "dev"
                         :source-paths ["src/cljs" "src-dev/cljs"]
-                        :compiler {
-                                   :main kindness.dev
+                        :compiler {:main kindness.dev
                                    :output-to "resources/public/js/compiled/out/kindness.js"
                                    :output-dir "resources/public/js/compiled/out"
                                    :optimizations :none
@@ -33,11 +32,11 @@
                                    :asset-path "js/compiled/out"}}
                        {:id "release"
                         :source-paths ["src/cljs"]
-                        :compiler {
-                                   :main kindness.game
+                        :compiler {:main kindness.game
                                    :output-to "resources/public/js/compiled/out-adv/kindness.min.js"
                                    :output-dir "resources/public/js/compiled/out-adv"
                                    :optimizations :advanced
-                                   :pretty-print false}}]}
+                                   :pretty-print true
+                                   :externs ["externs/gamepads.js"]}}]}
 
   :figwheel {:http-server-root "public"})
